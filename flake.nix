@@ -1,50 +1,37 @@
 {
   description =
-    "A flake giving access to fonts that I use, outside of nixpkgs.";
+    "Lilex Font Flake";
 
-  inputs.nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
-  inputs.flake-utils.url = "github:numtide/flake-utils";
+  inputs = {
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
+    flake-utils.url = "github:numtide/flake-utils";
+  };
 
   outputs = { self, nixpkgs, flake-utils }:
     flake-utils.lib.eachDefaultSystem (system:
-      let pkgs = nixpkgs.legacyPackages.${system};
-      in {
-        defaultPackage = pkgs.symlinkJoin {
-          name = "myfonts-0.1.4";
-          paths = builtins.attrValues
-            self.packages.${system}; # Add font derivation names here
+    let 
+      pkgs = nixpkgs.legacyPackages.${system};
+    in {
+      defaultPackage = pkgs.stdenv.mkDerivation {
+        name = "lilex-font";
+        version = "2.200";
+        src = builtins.fetchGit {
+          url = "https://github.com/mishamyrt/Lilex";
+          rev = "6de21bfa221564e8694f281c663f16ab93b76c33";
         };
-
-        packages.gillsans = pkgs.stdenvNoCC.mkDerivation {
-          name = "gillsans-font";
-          dontConfigue = true;
-          src = pkgs.fetchzip {
-            url =
-              "https://cdn.freefontsvault.com/wp-content/uploads/2020/02/03141445/Gill-Sans-Font-Family.zip";
-            sha256 = "sha256-YcZUKzRskiqmEqVcbK/XL6ypsNMbY49qJYFG3yZVF78=";
-            stripRoot = false;
-          };
-          installPhase = ''
-            mkdir -p $out/share/fonts
-            cp -R $src $out/share/fonts/opentype/
-          '';
-          meta = { description = "A Gill Sans Font Family derivation."; };
-        };
-
-        packages.palatino = pkgs.stdenvNoCC.mkDerivation {
-          name = "palatino-font";
-          dontConfigue = true;
-          src = pkgs.fetchzip {
-            url =
-              "https://www.dfonts.org/wp-content/uploads/fonts/Palatino.zip";
-            sha256 = "sha256-FBA8Lj2yJzrBQnazylwUwsFGbCBp1MJ1mdgifaYches=";
-            stripRoot = false;
-          };
-          installPhase = ''
-            mkdir -p $out/share/fonts
-            cp -R $src/Palatino $out/share/fonts/truetype/
-          '';
-          meta = { description = "The Palatino Font Family derivation."; };
-        };
-      });
+        buildInputs = with pkgs; [
+          python311Packages.setuptools
+          ttfautohint
+          gcc # build-essential
+          libffi
+          libgit2
+        ];
+        buildPhase = ''
+          cd $src
+          # make configure doesn't work bruh
+        '';
+        meta = { description = "Lilex Font."; };
+      };
+    }
+  );
 }
